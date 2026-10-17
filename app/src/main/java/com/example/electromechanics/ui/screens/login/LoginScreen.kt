@@ -69,7 +69,7 @@ fun LoginScreen(
         CampoTextoValidado(
             value = uiState.rutInput,
             onValueChange = { viewModel.onRutChanged(it) },
-            label = "RUT Técnico (ej: 12345678-K)",
+            label = "RUT Técnico (ej: 12345678-5)",
             errorText = uiState.rutError,
             leadingIcon = Icons.Default.AccountBox,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)

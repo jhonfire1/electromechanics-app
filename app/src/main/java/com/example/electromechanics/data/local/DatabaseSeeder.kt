@@ -16,7 +16,7 @@ object DatabaseSeeder {
                 // 1. Insertar técnico de prueba
                 val tecnico = EmpleadoEntity(
                     idEmpleado = "emp-001",
-                    rut = "12345678-9",
+                    rut = "123456785",
                     nombreCompleto = "Juan Pérez",
                     rol = "TECNICO",
                     especialidadTecnica = "Electromecánica Industrial",
