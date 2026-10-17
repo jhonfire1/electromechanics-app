@@ -20,4 +20,7 @@ interface EmpleadoDao {
 
     @Query("SELECT * FROM empleados WHERE idEmpleado = :id LIMIT 1")
     suspend fun obtenerPorId(id: String): EmpleadoEntity?
+
+    @Query("SELECT * FROM empleados WHERE rut = :rut AND passwordHash = :passwordHash LIMIT 1")
+    suspend fun autenticar(rut: String, passwordHash: String): EmpleadoEntity?
 }
