@@ -16,6 +16,8 @@ import com.example.electromechanics.data.local.entity.EvidenciaEntity
 import com.example.electromechanics.data.local.entity.RegistroJornadaEntity
 import com.example.electromechanics.data.local.entity.ServicioEntity
 import com.example.electromechanics.data.local.entity.SucursalEntity
+import com.example.electromechanics.data.local.entity.OrdenTrabajoEntity
+import com.example.electromechanics.data.local.dao.OrdenTrabajoDao
 
 @Database(
     entities = [
@@ -24,7 +26,8 @@ import com.example.electromechanics.data.local.entity.SucursalEntity
         ServicioEntity::class,
         ActividadEntity::class,
         RegistroJornadaEntity::class,
-        EvidenciaEntity::class
+        EvidenciaEntity::class ,
+        OrdenTrabajoEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -37,6 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun actividadDao(): ActividadDao
     abstract fun registroJornadaDao(): RegistroJornadaDao
     abstract fun evidenciaDao(): EvidenciaDao
+    abstract fun ordenTrabajoDao(): OrdenTrabajoDao
 
     companion object {
         @Volatile
