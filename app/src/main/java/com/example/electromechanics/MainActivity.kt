@@ -11,12 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.example.electromechanics.data.local.AppDatabase
 import com.example.electromechanics.data.local.DatabaseSeeder
-import com.example.electromechanics.ui.navigation.SetupNavGraph
+import com.example.electromechanics.ui.navigation.NavGraph
 import com.example.electromechanics.ui.theme.ElectromechanicsTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Obtener la instancia de la base de datos de Room
+        val database = AppDatabase.getDatabase(applicationContext)
 
         setContent {
             ElectromechanicsTheme {
@@ -28,11 +31,10 @@ class MainActivity : ComponentActivity() {
 
                     // Poblar base de datos inicial en segundo plano
                     LaunchedEffect(Unit) {
-                        val db = AppDatabase.getDatabase(applicationContext)
-                        DatabaseSeeder.insertInitialData(db)
+                        DatabaseSeeder.insertInitialData(database)
                     }
 
-                    SetupNavGraph(navController = navController)
+                    NavGraph(navController = navController, database = database)
                 }
             }
         }
