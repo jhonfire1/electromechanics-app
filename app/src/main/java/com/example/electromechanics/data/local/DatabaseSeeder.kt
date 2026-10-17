@@ -1,6 +1,7 @@
 package com.example.electromechanics.data.local
 
 import com.example.electromechanics.data.local.entity.EmpleadoEntity
+import com.example.electromechanics.data.local.entity.OrdenTrabajoEntity
 import com.example.electromechanics.data.local.entity.ServicioEntity
 import com.example.electromechanics.data.local.entity.SucursalEntity
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +46,38 @@ object DatabaseSeeder {
                     estado = "PENDIENTE"
                 )
                 db.servicioDao().insertarServicio(servicio)
+
+                // 4. Insertar Órdenes de Trabajo para la Hoja de Ruta
+                val ordenesPrueba = listOf(
+                    OrdenTrabajoEntity(
+                        idOrden = "1001",
+                        idEmpleadoAsignado = "emp-001",
+                        clienteNombre = "Planta Papelera Bío Bío",
+                        direccion = "Av. Industriales 450, Concepción",
+                        descripcionProblema = "Mantenimiento preventivo de motor trifásico y cambio de rodamientos.",
+                        estado = "PENDIENTE",
+                        fechaProgramada = "2026-10-20 09:00"
+                    ),
+                    OrdenTrabajoEntity(
+                        idOrden = "1002",
+                        idEmpleadoAsignado = "emp-001",
+                        clienteNombre = "Textiles del Sur S.A.",
+                        direccion = "Calle San Martín 1200, Talcahuano",
+                        descripcionProblema = "Falla de variador de frecuencia en línea de producción 2.",
+                        estado = "EN_PROCESO",
+                        fechaProgramada = "2026-10-18 14:30"
+                    ),
+                    OrdenTrabajoEntity(
+                        idOrden = "1003",
+                        idEmpleadoAsignado = "emp-001",
+                        clienteNombre = "Molinos San Pedro",
+                        direccion = "Ruta 160 Km 12, Coronel",
+                        descripcionProblema = "Inspección de tablero eléctrico principal e instalación de protecciones.",
+                        estado = "COMPLETADA",
+                        fechaProgramada = "2026-10-15 11:00"
+                    )
+                )
+                db.ordenTrabajoDao().insertAll(ordenesPrueba)
             }
         }
     }

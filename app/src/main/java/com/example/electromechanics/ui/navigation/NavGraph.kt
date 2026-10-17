@@ -1,17 +1,17 @@
 package com.example.electromechanics.ui.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.electromechanics.data.local.AppDatabase
+import com.example.electromechanics.data.repository.OrdenTrabajoRepository
+import com.example.electromechanics.ui.screens.hojaruta.HojaRutaScreen
+import com.example.electromechanics.ui.screens.hojaruta.HojaRutaViewModel
 import com.example.electromechanics.ui.screens.login.LoginScreen
 import com.example.electromechanics.ui.screens.login.LoginViewModel
 
@@ -39,16 +39,22 @@ fun NavGraph(
         }
 
         composable(Screen.HojaRuta.route) {
-            // Pantalla temporal de destino post-login
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "¡Bienvenido a la Hoja de Ruta! (Paso 3)",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            }
+            val repository = remember { OrdenTrabajoRepository(database.ordenTrabajoDao()) }
+            val viewModel: HojaRutaViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return HojaRutaViewModel(repository) as T
+                    }
+                }
+            )
+
+            HojaRutaScreen(
+                viewModel = viewModel,
+                onOrdenClick = { idOrden ->
+                    // Próximamente: Navegar al detalle de la OT (Paso 4)
+                }
+            )
         }
     }
 }
