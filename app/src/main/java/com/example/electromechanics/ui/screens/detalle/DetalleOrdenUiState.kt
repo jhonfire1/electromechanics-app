@@ -13,5 +13,13 @@ data class DetalleOrdenUiState(
     val nuevaTarea: String = "",
     val nuevosRepuestos: String = "",
     val nuevosComentarios: String = "",
-    val isGuardandoActividad: Boolean = false
+    val isGuardandoActividad: Boolean = false,
+
+    // Errores de validación por campo (null = sin error)
+    val tareaError: String? = null,
+    val repuestosError: String? = null,
+    val comentariosError: String? = null,
+
+    // Se pone en true al guardar una actividad (dispara vibración y animación)
+    val actividadGuardada: Boolean = false
 )

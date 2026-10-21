@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.electromechanics.data.local.entity.ActividadEntity
 import com.example.electromechanics.data.repository.OrdenTrabajoRepository
+import com.example.electromechanics.domain.util.ActividadValidator
+import com.example.electromechanics.domain.util.ValidationResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -58,20 +60,39 @@ class DetalleOrdenViewModel(
     }
 
     fun onTareaChanged(tarea: String) {
-        _uiState.update { it.copy(nuevaTarea = tarea) }
+        _uiState.update { it.copy(nuevaTarea = tarea, tareaError = null) }
     }
 
     fun onRepuestosChanged(repuestos: String) {
-        _uiState.update { it.copy(nuevosRepuestos = repuestos) }
+        _uiState.update { it.copy(nuevosRepuestos = repuestos, repuestosError = null) }
     }
 
     fun onComentariosChanged(comentarios: String) {
-        _uiState.update { it.copy(nuevosComentarios = comentarios) }
+        _uiState.update { it.copy(nuevosComentarios = comentarios, comentariosError = null) }
     }
 
     fun registrarActividad() {
         val currentState = _uiState.value
-        if (currentState.nuevaTarea.isBlank()) return
+
+        // Validación desacoplada de la UI (ActividadValidator)
+        val tareaVal = ActividadValidator.validarTarea(currentState.nuevaTarea)
+        val repuestosVal = ActividadValidator.validarRepuestos(currentState.nuevosRepuestos)
+        val comentariosVal = ActividadValidator.validarComentarios(currentState.nuevosComentarios)
+
+        val tareaErrorMsg = (tareaVal as? ValidationResult.Error)?.message
+        val repuestosErrorMsg = (repuestosVal as? ValidationResult.Error)?.message
+        val comentariosErrorMsg = (comentariosVal as? ValidationResult.Error)?.message
+
+        if (tareaErrorMsg != null || repuestosErrorMsg != null || comentariosErrorMsg != null) {
+            _uiState.update {
+                it.copy(
+                    tareaError = tareaErrorMsg,
+                    repuestosError = repuestosErrorMsg,
+                    comentariosError = comentariosErrorMsg
+                )
+            }
+            return
+        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isGuardandoActividad = true) }
@@ -90,9 +111,15 @@ class DetalleOrdenViewModel(
                     nuevaTarea = "",
                     nuevosRepuestos = "",
                     nuevosComentarios = "",
-                    isGuardandoActividad = false
+                    isGuardandoActividad = false,
+                    actividadGuardada = true
                 )
             }
         }
+    }
+
+    // La pantalla avisa que ya reaccionó (vibró y animó) al guardado
+    fun onActividadGuardadaConsumida() {
+        _uiState.update { it.copy(actividadGuardada = false) }
     }
 }
