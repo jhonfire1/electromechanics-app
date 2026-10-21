@@ -3,6 +3,7 @@ package com.example.electromechanics.ui.screens.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.electromechanics.data.local.dao.EmpleadoDao
+import com.example.electromechanics.data.session.SessionManager
 import com.example.electromechanics.domain.util.LoginValidator
 import com.example.electromechanics.domain.util.ValidationResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +53,7 @@ class LoginViewModel(
             )
 
             if (empleado != null) {
+                SessionManager.iniciarSesion(empleado.idEmpleado)
                 _uiState.update { it.copy(isLoading = false, isSuccess = true) }
             } else {
                 _uiState.update {
