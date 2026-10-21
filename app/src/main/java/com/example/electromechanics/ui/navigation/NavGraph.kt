@@ -1,5 +1,9 @@
 package com.example.electromechanics.ui.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
@@ -11,11 +15,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.electromechanics.data.local.AppDatabase
+import com.example.electromechanics.data.repository.EvidenciaRepository
+import com.example.electromechanics.data.repository.JornadaRepository
 import com.example.electromechanics.data.repository.OrdenTrabajoRepository
+import com.example.electromechanics.data.session.SessionManager
 import com.example.electromechanics.ui.screens.detalle.DetalleOrdenScreen
 import com.example.electromechanics.ui.screens.detalle.DetalleOrdenViewModel
+import com.example.electromechanics.ui.screens.detalle.EvidenciaViewModel
 import com.example.electromechanics.ui.screens.hojaruta.HojaRutaScreen
 import com.example.electromechanics.ui.screens.hojaruta.HojaRutaViewModel
+import com.example.electromechanics.ui.screens.jornada.JornadaScreen
+import com.example.electromechanics.ui.screens.jornada.JornadaViewModel
 import com.example.electromechanics.ui.screens.login.LoginScreen
 import com.example.electromechanics.ui.screens.login.LoginViewModel
 
@@ -26,7 +36,12 @@ fun NavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route
+        startDestination = Screen.Login.route,
+        // Animaciones de transición entre pantallas (deslizar + desvanecer)
+        enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+        exitTransition = { slideOutHorizontally(targetOffsetX = { -it / 3 }) + fadeOut() },
+        popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 3 }) + fadeIn() },
+        popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
     ) {
         // 1. Login
         composable(Screen.Login.route) {
@@ -61,11 +76,32 @@ fun NavGraph(
                 viewModel = viewModel,
                 onOrdenClick = { idOrden ->
                     navController.navigate(Screen.DetalleServicio.createRoute(idOrden))
+                },
+                onJornadaClick = {
+                    navController.navigate(Screen.Jornada.route)
                 }
             )
         }
 
-        // 3. Detalle de la Orden de Trabajo / Servicio
+        // 3. Marcar entrada / salida con GPS
+        composable(Screen.Jornada.route) {
+            val repository = remember { JornadaRepository(database.registroJornadaDao()) }
+            val viewModel: JornadaViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return JornadaViewModel(repository, SessionManager.idEmpleadoActual ?: "") as T
+                    }
+                }
+            )
+
+            JornadaScreen(
+                viewModel = viewModel,
+                onVolverClick = { navController.popBackStack() }
+            )
+        }
+
+        // 4. Detalle de la Orden de Trabajo / Servicio
         composable(
             route = Screen.DetalleServicio.route,
             arguments = listOf(navArgument("idServicio") { type = NavType.StringType })
@@ -74,6 +110,7 @@ fun NavGraph(
             val repository = remember {
                 OrdenTrabajoRepository(database.ordenTrabajoDao(), database.actividadDao())
             }
+            val evidenciaRepository = remember { EvidenciaRepository(database.evidenciaDao()) }
 
             val viewModel: DetalleOrdenViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
@@ -84,8 +121,18 @@ fun NavGraph(
                 }
             )
 
+            val evidenciaViewModel: EvidenciaViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return EvidenciaViewModel(evidenciaRepository, idServicio) as T
+                    }
+                }
+            )
+
             DetalleOrdenScreen(
                 viewModel = viewModel,
+                evidenciaViewModel = evidenciaViewModel,
                 onVolverClick = {
                     navController.popBackStack()
                 }

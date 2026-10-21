@@ -12,10 +12,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -24,16 +28,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.electromechanics.ui.components.TarjetaBateria
 import com.example.electromechanics.ui.components.TarjetaOrdenTrabajo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HojaRutaScreen(
     viewModel: HojaRutaViewModel,
-    onOrdenClick: (String) -> Unit
+    onOrdenClick: (String) -> Unit,
+    onJornadaClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -47,6 +55,27 @@ fun HojaRutaScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Batería del dispositivo (recurso nativo): útil para el técnico en terreno
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                TarjetaBateria(context)
+            }
+
+            // Acceso a marcar entrada/salida con GPS
+            OutlinedButton(
+                onClick = onJornadaClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Icon(Icons.Default.LocationOn, contentDescription = null)
+                Spacer(modifier = Modifier.padding(horizontal = 4.dp))
+                Text("Marcar entrada / salida")
+            }
+
             // Filtros rápidos
             Row(
                 modifier = Modifier
