@@ -12,7 +12,7 @@ android {
     defaultConfig {
         applicationId = "com.example.electromechanics"
         minSdk = 23
-        targetSdk = 37
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -54,6 +54,9 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // GPS (ubicación)
+    implementation(libs.play.services.location)
 
     // Navigation (Usando la sintaxis del Version Catalog)
     implementation(libs.androidx.navigation.compose)
