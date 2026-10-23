@@ -7,8 +7,8 @@ cambia el estado de cada orden de trabajo y registra las actividades realizadas.
 Proyecto de la asignatura **DSY1105** (Duoc UC) — EP2 (encargo) y EP3 (defensa).
 
 ## Integrantes
-- _Completar nombre y apellido_ — GitHub: Freymuth
-- _Completar nombre y apellido_ — GitHub: jhonfire1
+ GitHub: Freymuth
+ GitHub: jhonfire1
 
 ## Funcionalidades
 - **Login** con RUT (validación módulo 11) y contraseña, autenticado contra Room.
