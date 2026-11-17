@@ -5,7 +5,6 @@
 ```mermaid
 flowchart TB
 %%{init: {"theme":"base","flowchart":{"curve":"basis","htmlLabels":true,"nodeSpacing":50,"rankSpacing":55,"padding":16},"themeVariables":{"fontFamily":"Inter, Segoe UI, Roboto, Arial, sans-serif","fontSize":"15px","background":"#ffffff","lineColor":"#64748b","textColor":"#1e293b","titleColor":"#0f172a","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"}}}%%
-flowchart TB
     subgraph ANDROID["📱 <b>Aplicación Android</b> · Kotlin · una sola app, navegación según rol"]
         ROLES(["👥 <b>Roles</b><br/>Técnico · Supervisor"])
         VIEW["🖼️ <b>View</b><br/>Jetpack Compose<br/>+ Navigation Compose"]
@@ -96,7 +95,6 @@ flowchart TB
 ```mermaid
 flowchart LR
 %%{init: {"theme":"base","flowchart":{"curve":"basis","htmlLabels":true,"nodeSpacing":35,"rankSpacing":80,"padding":14},"themeVariables":{"fontFamily":"Inter, Segoe UI, Roboto, Arial, sans-serif","fontSize":"15px","background":"#ffffff","lineColor":"#64748b","textColor":"#1e293b","titleColor":"#0f172a","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"}}}%%
-flowchart LR
     CLIENT(["📱 <b>Android · Retrofit</b><br/>Técnico y Supervisor"])
     SECRET(["🔑 <b>Secreto HS256 compartido</b><br/>variable de entorno<br/>en ambos servicios"])
 
