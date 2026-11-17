@@ -1,0 +1,84 @@
+%%{init: {"theme":"base","flowchart":{"curve":"basis","htmlLabels":true,"nodeSpacing":50,"rankSpacing":55,"padding":16},"themeVariables":{"fontFamily":"Inter, Segoe UI, Roboto, Arial, sans-serif","fontSize":"15px","background":"#ffffff","lineColor":"#64748b","textColor":"#1e293b","titleColor":"#0f172a","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"}}}%%
+flowchart TB
+    subgraph ANDROID["📱 <b>Aplicación Android</b> · Kotlin · una sola app, navegación según rol"]
+        ROLES(["👥 <b>Roles</b><br/>Técnico · Supervisor"])
+        VIEW["🖼️ <b>View</b><br/>Jetpack Compose<br/>+ Navigation Compose"]
+        NATIVE["📷 <b>Recursos nativos</b><br/>Técnico: cámara y GPS<br/>Ambos roles: NotificationManager"]
+        VM["⚙️ <b>ViewModel</b>"]
+        REPO["📦 <b>Repository</b>"]
+        ROOM["🗃️ <b>Room / DAO</b><br/>sesión y autenticación local"]
+        SQLITE[("<b>SQLite local</b>")]
+        RETROFIT["🌐 <b>Retrofit / API</b><br/>una base URL por microservicio"]
+        ROLES --> VIEW
+        VIEW --> VM
+        VM --> REPO
+        REPO --> ROOM
+        ROOM --> SQLITE
+        REPO --> RETROFIT
+        VIEW -.->|"usa"| NATIVE
+    end
+
+    subgraph LOCAL["🐳 <b>Desarrollo local</b> · Docker Compose"]
+        AUTH_L["<b>auth-service</b><br/>contenedor Docker"]
+        OPS_L["<b>operations-service</b><br/>contenedor Docker"]
+        PG_L[("<b>PostgreSQL</b><br/>contenedor Docker")]
+    end
+
+    subgraph PROD["☁️ <b>Producción</b>"]
+        subgraph RENDER["Render · un contenedor Docker por microservicio"]
+            AUTH_R["<b>auth-service</b>"]
+            OPS_R["<b>operations-service</b>"]
+        end
+        subgraph SUPABASE["Supabase"]
+            PG_S[("<b>PostgreSQL</b><br/>base de datos central")]
+            BUCKET[("<b>Storage</b><br/>bucket de fotografías")]
+        end
+    end
+
+    RETROFIT -.->|"solicitudes (desarrollo)"| AUTH_L
+    RETROFIT -.->|"solicitudes (desarrollo)"| OPS_L
+    RETROFIT ==>|"URL pública"| AUTH_R
+    RETROFIT ==>|"URL pública"| OPS_R
+
+    AUTH_L --> PG_L
+    OPS_L --> PG_L
+    OPS_L -.->|"bucket real de Supabase"| BUCKET
+
+    AUTH_R --> PG_S
+    OPS_R --> PG_S
+    OPS_R ==>|"sube fotografías"| BUCKET
+
+    %% Enlace invisible: mantiene la app compacta y deja los entornos debajo de ella
+    SQLITE ~~~ RETROFIT
+
+    %% ---- Estilos de nodos ----
+    classDef role  fill:#F1F5F9,stroke:#64748B,stroke-width:1.5px,color:#0F172A;
+    classDef app   fill:#E0F2FE,stroke:#0284C7,stroke-width:1.5px,color:#0C4A6E;
+    classDef nat   fill:#FCE7F3,stroke:#DB2777,stroke-width:1.5px,color:#831843;
+    classDef dev   fill:#FEF3C7,stroke:#D97706,stroke-width:1.5px,color:#78350F;
+    classDef prod  fill:#DCFCE7,stroke:#16A34A,stroke-width:1.5px,color:#14532D;
+    classDef db    fill:#FFEDD5,stroke:#EA580C,stroke-width:1.5px,color:#7C2D12;
+    classDef store fill:#EDE9FE,stroke:#7C3AED,stroke-width:1.5px,color:#4C1D95;
+
+    class ROLES role;
+    class VIEW,VM,REPO,ROOM,RETROFIT app;
+    class NATIVE nat;
+    class AUTH_L,OPS_L dev;
+    class AUTH_R,OPS_R prod;
+    class SQLITE,PG_L,PG_S db;
+    class BUCKET store;
+
+    %% ---- Estilos de contenedores ----
+    style ANDROID  fill:#F0F9FF,stroke:#0284C7,stroke-width:2px
+    style LOCAL    fill:#FFFBEB,stroke:#D97706,stroke-width:2px,stroke-dasharray:6 4
+    style PROD     fill:#F0FDF4,stroke:#16A34A,stroke-width:2px
+    style RENDER   fill:#FFFFFF,stroke:#86EFAC
+    style SUPABASE fill:#FFFFFF,stroke:#C4B5FD
+
+    %% ---- Estilos de conexiones (por orden de definición) ----
+    %% 0-5: flujo interno de la app | 6: recursos nativos
+    %% 7,8,11,12,13: desarrollo (naranja) | 9,10,14,15,16: producción (verde)
+    linkStyle 0,1,2,3,4,5 stroke:#0284C7,stroke-width:2px
+    linkStyle 6 stroke:#DB2777,stroke-width:1.5px
+    linkStyle 7,8,11,12,13 stroke:#D97706,stroke-width:2px
+    linkStyle 9,10,14,15,16 stroke:#16A34A,stroke-width:3px
