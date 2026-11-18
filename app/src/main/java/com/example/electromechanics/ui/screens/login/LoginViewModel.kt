@@ -2,8 +2,8 @@ package com.example.electromechanics.ui.screens.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.electromechanics.data.local.dao.EmpleadoDao
-import com.example.electromechanics.data.session.SessionManager
+import com.example.electromechanics.data.repository.AuthRepository
+import com.example.electromechanics.data.repository.LoginResult
 import com.example.electromechanics.domain.util.LoginValidator
 import com.example.electromechanics.domain.util.ValidationResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
-    private val empleadoDao: EmpleadoDao
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -28,6 +28,8 @@ class LoginViewModel(
     }
 
     fun login() {
+        if (_uiState.value.isLoading) return // evita doble envío mientras el servidor despierta
+
         val rutVal = LoginValidator.validarRut(_uiState.value.rutInput)
         val passVal = LoginValidator.validarPassword(_uiState.value.passwordInput)
 
@@ -35,31 +37,41 @@ class LoginViewModel(
         val passErrorMsg = (passVal as? ValidationResult.Error)?.message
 
         if (rutErrorMsg != null || passErrorMsg != null) {
-            _uiState.update {
-                it.copy(rutError = rutErrorMsg, passwordError = passErrorMsg)
-            }
+            _uiState.update { it.copy(rutError = rutErrorMsg, passwordError = passErrorMsg) }
             return
         }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val rutFormateado = _uiState.value.rutInput.replace(".", "").replace("-", "").trim().uppercase()
-
-            // Verificación local contra la base de datos Room
-            val empleado = empleadoDao.autenticar(
-                rut = rutFormateado,
-                passwordHash = _uiState.value.passwordInput
+            val resultado = authRepository.login(
+                rutNormalizado = LoginValidator.normalizarRut(_uiState.value.rutInput),
+                password = _uiState.value.passwordInput
             )
 
-            if (empleado != null) {
-                SessionManager.iniciarSesion(empleado.idEmpleado)
-                _uiState.update { it.copy(isLoading = false, isSuccess = true) }
-            } else {
-                _uiState.update {
-                    it.copy(
+            _uiState.update { estado ->
+                when (resultado) {
+                    is LoginResult.Exito -> estado.copy(
+                        isLoading = false,
+                        rolAutenticado = resultado.rol,
+                        sinConexion = resultado.sinConexion
+                    )
+                    LoginResult.CredencialesInvalidas -> estado.copy(
                         isLoading = false,
                         errorMessage = "Credenciales incorrectas. Verifique su RUT o contraseña."
+                    )
+                    LoginResult.SinSesionLocal -> estado.copy(
+                        isLoading = false,
+                        errorMessage = "Sin conexión. Sin internet solo puede ingresar el usuario que " +
+                            "inició sesión con internet en este dispositivo, dentro de las últimas 8 horas."
+                    )
+                    LoginResult.SesionLocalExpirada -> estado.copy(
+                        isLoading = false,
+                        errorMessage = "La sesión local expiró (8 horas). Conéctese a internet para iniciar sesión."
+                    )
+                    is LoginResult.ErrorServidor -> estado.copy(
+                        isLoading = false,
+                        errorMessage = "El servidor no respondió correctamente. Intente nuevamente."
                     )
                 }
             }

@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -38,7 +39,8 @@ import com.example.electromechanics.ui.components.TarjetaOrdenTrabajo
 fun HojaRutaScreen(
     viewModel: HojaRutaViewModel,
     onOrdenClick: (String) -> Unit,
-    onJornadaClick: () -> Unit
+    onJornadaClick: () -> Unit,
+    onCerrarSesion: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -46,7 +48,10 @@ fun HojaRutaScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Hoja de Ruta") }
+                title = { Text("Hoja de Ruta") },
+                actions = {
+                    TextButton(onClick = onCerrarSesion) { Text("Cerrar sesión") }
+                }
             )
         }
     ) { paddingValues ->

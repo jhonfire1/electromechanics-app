@@ -7,6 +7,10 @@ sealed class ValidationResult {
 
 object LoginValidator {
 
+    /** Forma enviada al backend como "username": sin puntos ni guion y en mayúscula (ej: 123456785). */
+    fun normalizarRut(rut: String): String =
+        rut.replace(".", "").replace("-", "").trim().uppercase()
+
     fun validarRut(rut: String): ValidationResult {
         val rutLimpio = rut.replace(".", "").replace("-", "").trim().uppercase()
 

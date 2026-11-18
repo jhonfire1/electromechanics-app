@@ -34,15 +34,13 @@ import com.example.electromechanics.ui.components.CampoTextoValidado
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: (rol: String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(uiState.isSuccess) {
-        if (uiState.isSuccess) {
-            onLoginSuccess()
-        }
+    LaunchedEffect(uiState.rolAutenticado) {
+        uiState.rolAutenticado?.let { rol -> onLoginSuccess(rol) }
     }
 
     Column(
@@ -59,7 +57,7 @@ fun LoginScreen(
         )
 
         Text(
-            text = "Acceso para Técnicos",
+            text = "Acceso para Técnicos y Supervisores",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -121,6 +119,15 @@ fun LoginScreen(
             } else {
                 Text("Iniciar Sesión")
             }
+        }
+
+        if (uiState.isLoading) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Conectando con el servidor. La primera vez puede tardar hasta 1 minuto.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

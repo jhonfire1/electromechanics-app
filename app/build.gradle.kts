@@ -17,6 +17,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // URL pública de auth-service (Render). Debe terminar en "/" para Retrofit.
+        buildConfigField("String", "AUTH_BASE_URL", "\"https://electromechanics-auth.onrender.com/\"")
     }
 
     buildTypes {
@@ -37,6 +40,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -60,6 +64,12 @@ dependencies {
 
     // Navigation (Usando la sintaxis del Version Catalog)
     implementation(libs.androidx.navigation.compose)
+
+    // Red: Retrofit + OkHttp (cliente HTTP) + Gson (JSON)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

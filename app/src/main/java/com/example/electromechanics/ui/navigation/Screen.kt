@@ -1,8 +1,10 @@
 package com.example.electromechanics.ui.navigation
 
 sealed class Screen(val route: String) {
+    object Splash : Screen("splash_screen")
     object Login : Screen("login_screen")
     object HojaRuta : Screen("hoja_ruta_screen")
+    object SupervisorHome : Screen("supervisor_home_screen")
     object Jornada : Screen("jornada_screen")
     object DetalleServicio : Screen("detalle_servicio_screen/{idServicio}") {
         fun createRoute(idServicio: String) = "detalle_servicio_screen/$idServicio"
