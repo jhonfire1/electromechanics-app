@@ -22,7 +22,7 @@ object DatabaseSeeder {
                     rol = "TECNICO",
                     especialidadTecnica = "Electromecánica Industrial",
                     correoCorporativo = "tecnico@electromechanics.cl",
-                    passwordHash = "123456"
+                    passwordHash = "git apply \"\$HOME\\Downloads\\P1-06-android.patch\""
                 )
                 db.empleadoDao().insertarEmpleado(tecnico)
 

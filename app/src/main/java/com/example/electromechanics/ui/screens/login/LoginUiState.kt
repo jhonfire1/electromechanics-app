@@ -7,5 +7,7 @@ data class LoginUiState(
     val passwordError: String? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val isSuccess: Boolean = false
+    /** Rol autenticado (TECNICO / SUPERVISOR). Distinto de null = login exitoso. */
+    val rolAutenticado: String? = null,
+    val sinConexion: Boolean = false
 )

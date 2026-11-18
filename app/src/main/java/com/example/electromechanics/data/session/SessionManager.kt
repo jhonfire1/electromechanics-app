@@ -1,11 +1,26 @@
 package com.example.electromechanics.data.session
 
-// Guarda qué empleado inició sesión (objeto simple, igual que LoginValidator)
+/**
+ * Sesión en memoria. La fuente persistente es la tabla "sesion" de Room;
+ * AuthRepository la vuelve a cargar aquí al abrir la app (restaurarSesion).
+ */
 object SessionManager {
     var idEmpleadoActual: String? = null
         private set
+    var rolActual: String? = null
+        private set
+    var tokenActual: String? = null
+        private set
 
-    fun iniciarSesion(idEmpleado: String) {
+    fun iniciarSesion(idEmpleado: String, rol: String, token: String) {
         idEmpleadoActual = idEmpleado
+        rolActual = rol
+        tokenActual = token
+    }
+
+    fun cerrarSesion() {
+        idEmpleadoActual = null
+        rolActual = null
+        tokenActual = null
     }
 }
