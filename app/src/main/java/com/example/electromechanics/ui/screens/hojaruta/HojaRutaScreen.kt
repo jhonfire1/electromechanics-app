@@ -85,18 +85,25 @@ fun HojaRutaScreen(
             }
 
             // Filtros rápidos
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                FiltroEstado.entries.forEach { filtro ->
-                    FilterChip(
-                        selected = uiState.filtroSeleccionado == filtro,
-                        onClick = { viewModel.seleccionarFiltro(filtro) },
-                        label = { Text(filtro.name.replace("_", " ")) }
-                    )
+                val filas = listOf(
+                    listOf(FiltroEstado.TODAS, FiltroEstado.PENDIENTE, FiltroEstado.EN_PROCESO),
+                    listOf(FiltroEstado.COMPLETADA)
+                )
+                filas.forEach { filtros ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        filtros.forEach { filtro ->
+                            FilterChip(
+                                selected = uiState.filtroSeleccionado == filtro,
+                                onClick = { viewModel.seleccionarFiltro(filtro) },
+                                label = { Text(filtro.name.replace("_", " ")) }
+                            )
+                        }
+                    }
                 }
             }
 
