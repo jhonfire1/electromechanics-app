@@ -1,15 +1,38 @@
 package com.example.electromechanics.data.repository
 
-import com.example.electromechanics.data.local.dao.ActividadDao
-import com.example.electromechanics.data.local.dao.OrdenTrabajoDao
+import androidx.room.withTransaction
+import com.example.electromechanics.data.local.AppDatabase
 import com.example.electromechanics.data.local.entity.ActividadEntity
 import com.example.electromechanics.data.local.entity.OrdenTrabajoEntity
+import com.example.electromechanics.data.remote.CambioEstadoDto
+import com.example.electromechanics.data.remote.CrearOrdenDto
+import com.example.electromechanics.data.remote.OrdenDto
+import com.example.electromechanics.data.remote.OrdenesApi
+import com.example.electromechanics.data.session.SessionManager
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class OrdenTrabajoRepository(
-    private val ordenTrabajoDao: OrdenTrabajoDao,
-    private val actividadDao: ActividadDao
+    private val database: AppDatabase,
+    private val api: OrdenesApi
 ) {
+    private val ordenTrabajoDao = database.ordenTrabajoDao()
+    private val actividadDao = database.actividadDao()
+    private val sincronizacion = Mutex()
+
+    suspend fun crear(orden: CrearOrdenDto): OrdenDto =
+        api.crear(SessionManager.autorizacion(), orden)
+
+    suspend fun actualizarAsignadas(idEmpleado: String) = sincronizacion.withLock {
+        val ordenes = api.asignadas(SessionManager.autorizacion()).map { it.aEntidad() }
+        check(ordenes.all { it.idEmpleadoAsignado == idEmpleado })
+        database.withTransaction {
+            ordenTrabajoDao.eliminarOrdenesDelTecnico(idEmpleado)
+            ordenTrabajoDao.insertAll(ordenes)
+        }
+    }
+
     fun obtenerOrdenesPorTecnico(idEmpleado: String): Flow<List<OrdenTrabajoEntity>> {
         return ordenTrabajoDao.obtenerOrdenesPorTecnico(idEmpleado)
     }
@@ -18,8 +41,9 @@ class OrdenTrabajoRepository(
         return ordenTrabajoDao.obtenerOrdenPorId(idOrden)
     }
 
-    suspend fun actualizarEstado(idOrden: String, nuevoEstado: String) {
-        ordenTrabajoDao.actualizarEstado(idOrden, nuevoEstado)
+    suspend fun actualizarEstado(idOrden: String, nuevoEstado: String) = sincronizacion.withLock {
+        val orden = api.cambiarEstado(SessionManager.autorizacion(), idOrden, CambioEstadoDto(nuevoEstado))
+        ordenTrabajoDao.insertAll(listOf(orden.aEntidad()))
     }
 
     // Métodos con ActividadDao
@@ -30,4 +54,14 @@ class OrdenTrabajoRepository(
     suspend fun registrarActividad(actividad: ActividadEntity) {
         actividadDao.insertarActividad(actividad)
     }
+
+    private fun OrdenDto.aEntidad() = OrdenTrabajoEntity(
+        idOrden = id,
+        idEmpleadoAsignado = tecnicoId.toString(),
+        clienteNombre = cliente,
+        direccion = direccion,
+        descripcionProblema = descripcion,
+        estado = estado,
+        fechaProgramada = fecha
+    )
 }

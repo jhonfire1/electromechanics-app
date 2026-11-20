@@ -1,6 +1,7 @@
 package com.example.electromechanics.data.repository
 
 import com.example.electromechanics.data.local.dao.SesionDao
+import com.example.electromechanics.data.local.entity.CuentaLocalEntity
 import com.example.electromechanics.data.local.entity.SesionEntity
 import com.example.electromechanics.data.remote.AuthApi
 import com.example.electromechanics.data.remote.dto.LoginRequestDto
@@ -48,8 +49,12 @@ class AuthRepository(
             throw e // nunca tragarse la cancelación de una corrutina
         } catch (e: HttpException) {
             // El servidor respondió: NO se cae al login local.
-            if (e.code() == 401) LoginResult.CredencialesInvalidas
-            else LoginResult.ErrorServidor(e.code())
+            if (e.code() == 401) {
+                sesionDao.borrarCuenta(rutNormalizado)
+                LoginResult.CredencialesInvalidas
+            } else {
+                LoginResult.ErrorServidor(e.code())
+            }
         } catch (e: IOException) {
             // Sin conectividad, DNS o timeout: no hubo respuesta del servidor.
             loginLocal(rutNormalizado, password)
@@ -60,9 +65,10 @@ class AuthRepository(
 
     /** Recupera la sesión al abrir la app. Devuelve null si no existe o ya expiró. */
     suspend fun restaurarSesion(): SesionEntity? {
+        sesionDao.borrarCuentasVencidas(ahoraMs())
         val sesion = sesionDao.obtener() ?: return null
         if (ahoraMs() >= sesion.expiraEnMs) {
-            cerrarSesion() // expirada: se borran también los datos locales de autenticación
+            cerrarSesion()
             return null
         }
         SessionManager.iniciarSesion(sesion.idUsuario, sesion.rol, sesion.token)
@@ -74,6 +80,8 @@ class AuthRepository(
         SessionManager.cerrarSesion()
     }
 
+    suspend fun listarTecnicos() = authApi.tecnicos(SessionManager.autorizacion())
+
     private suspend fun procesarLoginOnline(
         rutNormalizado: String,
         password: String,
@@ -81,16 +89,17 @@ class AuthRepository(
     ): LoginResult {
         val token = respuesta.token
         val rol = respuesta.role
-        if (token.isNullOrBlank() || rol == null || rol !in Roles.PERMITIDOS) {
+        if (token.isNullOrBlank() || respuesta.id <= 0 || rol == null || rol !in Roles.PERMITIDOS) {
             return LoginResult.ErrorServidor(null)
         }
         val expiraEnMs = JwtExpiracion.leerExpiracionMs(token) ?: return LoginResult.ErrorServidor(null)
+        if (expiraEnMs <= ahoraMs()) return LoginResult.ErrorServidor(null)
 
         // PBKDF2 es costoso a propósito: se ejecuta fuera del hilo principal.
         val verificador = withContext(Dispatchers.Default) { PasswordHasher.crearVerificador(password) }
 
-        sesionDao.guardar(
-            SesionEntity(
+        sesionDao.guardarLogin(
+            CuentaLocalEntity(
                 idUsuario = respuesta.id.toString(),
                 username = rutNormalizado,
                 rol = rol,
@@ -104,18 +113,18 @@ class AuthRepository(
     }
 
     private suspend fun loginLocal(rutNormalizado: String, password: String): LoginResult {
-        val sesion = sesionDao.obtener() ?: return LoginResult.SinSesionLocal
-        if (sesion.username != rutNormalizado) return LoginResult.SinSesionLocal
-        if (ahoraMs() >= sesion.expiraEnMs) {
-            cerrarSesion()
+        val cuenta = sesionDao.obtenerCuenta(rutNormalizado) ?: return LoginResult.SinSesionLocal
+        if (ahoraMs() >= cuenta.expiraEnMs) {
+            sesionDao.borrarCuenta(rutNormalizado)
             return LoginResult.SesionLocalExpirada
         }
         val valida = withContext(Dispatchers.Default) {
-            PasswordHasher.verificar(password, sesion.verificadorLocal)
+            PasswordHasher.verificar(password, cuenta.verificadorLocal)
         }
         if (!valida) return LoginResult.CredencialesInvalidas
 
-        SessionManager.iniciarSesion(sesion.idUsuario, sesion.rol, sesion.token)
-        return LoginResult.Exito(sesion.rol, sinConexion = true)
+        sesionDao.guardar(cuenta.comoSesion())
+        SessionManager.iniciarSesion(cuenta.idUsuario, cuenta.rol, cuenta.token)
+        return LoginResult.Exito(cuenta.rol, sinConexion = true)
     }
 }

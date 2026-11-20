@@ -17,14 +17,14 @@ object LoginValidator {
         if (rutLimpio.isEmpty()) {
             return ValidationResult.Error("El RUT no puede estar vacío")
         }
-        if (rutLimpio.length < 8) {
-            return ValidationResult.Error("Formato de RUT incompleto")
+        if (rutLimpio.length !in 8..9) {
+            return ValidationResult.Error("Formato de RUT inválido")
         }
 
         val cuerpo = rutLimpio.dropLast(1)
         val dvIngresado = rutLimpio.last()
 
-        if (cuerpo.any { !it.isDigit() }) {
+        if (cuerpo.any { it !in '0'..'9' }) {
             return ValidationResult.Error("El cuerpo del RUT solo debe contener números")
         }
 
@@ -55,6 +55,7 @@ object LoginValidator {
         return when {
             password.isEmpty() -> ValidationResult.Error("La contraseña no puede estar vacía")
             password.length < 4 -> ValidationResult.Error("La contraseña debe tener al menos 4 caracteres")
+            password.toByteArray().size > 72 -> ValidationResult.Error("La contraseña es demasiado larga")
             else -> ValidationResult.Success
         }
     }

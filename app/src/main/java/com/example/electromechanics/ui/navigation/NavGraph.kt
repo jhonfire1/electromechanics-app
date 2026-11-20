@@ -39,7 +39,10 @@ import com.example.electromechanics.ui.screens.jornada.JornadaViewModel
 import com.example.electromechanics.ui.screens.login.LoginScreen
 import com.example.electromechanics.ui.screens.login.LoginViewModel
 import com.example.electromechanics.ui.screens.supervisor.SupervisorHomeScreen
+import com.example.electromechanics.ui.screens.supervisor.SupervisorViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Destino inicial según el rol. Un rol desconocido o ausente vuelve al login. */
 private fun rutaInicialPorRol(rol: String?): String = when (rol) {
@@ -55,14 +58,17 @@ fun NavGraph(
 ) {
     // Una sola instancia compartida por Splash, Login y el cierre de sesión.
     val authRepository = remember { AuthRepository(database.sesionDao(), RetrofitClient.authApi) }
+    val ordenesRepository = remember { OrdenTrabajoRepository(database, RetrofitClient.ordenesApi) }
     val scope = rememberCoroutineScope()
 
     val cerrarSesion: () -> Unit = {
         scope.launch {
             authRepository.cerrarSesion()
             // Limpia todo el back stack: con "Atrás" no se puede volver a una pantalla autenticada.
-            navController.navigate(Screen.Login.route) {
-                popUpTo(navController.graph.id) { inclusive = true }
+            withContext(Dispatchers.Main.immediate) {
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(navController.graph.id) { inclusive = true }
+                }
             }
         }
     }
@@ -80,8 +86,10 @@ fun NavGraph(
         composable(Screen.Splash.route) {
             LaunchedEffect(Unit) {
                 val rol = authRepository.restaurarSesion()?.rol
-                navController.navigate(rutaInicialPorRol(rol)) {
-                    popUpTo(Screen.Splash.route) { inclusive = true }
+                withContext(Dispatchers.Main.immediate) {
+                    navController.navigate(rutaInicialPorRol(rol)) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
                 }
             }
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -111,21 +119,25 @@ fun NavGraph(
             )
         }
 
-        // 1b. Panel provisional del Supervisor (sus pantallas reales llegan en fases posteriores)
         composable(Screen.SupervisorHome.route) {
-            SupervisorHomeScreen(onCerrarSesion = cerrarSesion)
+            val viewModel: SupervisorViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return SupervisorViewModel(authRepository, ordenesRepository) as T
+                    }
+                }
+            )
+            SupervisorHomeScreen(viewModel = viewModel, onCerrarSesion = cerrarSesion)
         }
 
         // 2. Hoja de Ruta (Listado de OTs)
         composable(Screen.HojaRuta.route) {
-            val repository = remember {
-                OrdenTrabajoRepository(database.ordenTrabajoDao(), database.actividadDao())
-            }
             val viewModel: HojaRutaViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         @Suppress("UNCHECKED_CAST")
-                        return HojaRutaViewModel(repository) as T
+                        return HojaRutaViewModel(ordenesRepository) as T
                     }
                 }
             )
@@ -166,16 +178,13 @@ fun NavGraph(
             arguments = listOf(navArgument("idServicio") { type = NavType.StringType })
         ) { backStackEntry ->
             val idServicio = backStackEntry.arguments?.getString("idServicio") ?: ""
-            val repository = remember {
-                OrdenTrabajoRepository(database.ordenTrabajoDao(), database.actividadDao())
-            }
             val evidenciaRepository = remember { EvidenciaRepository(database.evidenciaDao()) }
 
             val viewModel: DetalleOrdenViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         @Suppress("UNCHECKED_CAST")
-                        return DetalleOrdenViewModel(repository, idServicio) as T
+                        return DetalleOrdenViewModel(ordenesRepository, idServicio) as T
                     }
                 }
             )

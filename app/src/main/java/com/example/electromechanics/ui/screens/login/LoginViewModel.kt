@@ -62,8 +62,8 @@ class LoginViewModel(
                     )
                     LoginResult.SinSesionLocal -> estado.copy(
                         isLoading = false,
-                        errorMessage = "Sin conexión. Sin internet solo puede ingresar el usuario que " +
-                            "inició sesión con internet en este dispositivo, dentro de las últimas 8 horas."
+                        errorMessage = "Sin conexión. Ingresa primero con internet en este dispositivo " +
+                            "para habilitar el acceso local de esta cuenta."
                     )
                     LoginResult.SesionLocalExpirada -> estado.copy(
                         isLoading = false,

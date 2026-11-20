@@ -32,12 +32,13 @@ object RetrofitClient {
         builder.build()
     }
 
-    val authApi: AuthApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BuildConfig.AUTH_BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(AuthApi::class.java)
-    }
+    val authApi: AuthApi by lazy { crear(BuildConfig.AUTH_BASE_URL, AuthApi::class.java) }
+    val ordenesApi: OrdenesApi by lazy { crear(BuildConfig.OPERATIONS_BASE_URL, OrdenesApi::class.java) }
+
+    private fun <T> crear(url: String, servicio: Class<T>): T = Retrofit.Builder()
+        .baseUrl(url)
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(servicio)
 }

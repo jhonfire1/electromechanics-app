@@ -1,52 +1,28 @@
 # Electromechanics App
 
-App Android (MVP) para **Electromechanics Ingeniería SpA**, empresa de mantención industrial.
-Reemplaza el registro por WhatsApp, papel y llamadas: el técnico inicia sesión, ve su hoja de ruta,
-cambia el estado de cada orden de trabajo y registra las actividades realizadas.
+App de mantención industrial para el proyecto de Aplicaciones Móviles de Duoc UC. La implementación usa Kotlin, Jetpack Compose, MVVM, Retrofit y Room sobre SQLite.
 
-Proyecto de la asignatura **DSY1105** (Duoc UC) — EP2 (encargo) y EP3 (defensa).
+**Integrantes:** [Freymuth](https://github.com/Freymuth) y [jhonfire1](https://github.com/jhonfire1).
 
-## Integrantes
- GitHub: Freymuth
- GitHub: jhonfire1
+## Ejecutar la demostración
 
-## Funcionalidades
-- **Login** con RUT (validación módulo 11) y contraseña, autenticado contra Room.
-- **Hoja de ruta**: lista de órdenes del técnico logueado, con filtros por estado.
-- **Detalle de orden**: información, cambio de estado (Pendiente → En proceso → Completada) e historial de actividades.
-- **Formulario de actividad validado**: ícono y mensaje de error por campo, con la validación en `domain/util`.
-- **Persistencia local** con Room (SQLite), sin conexión a red.
-- **Marcar jornada con GPS**: entrada/salida con hora y ubicación (Google Play Services Location), guardadas en Room.
-- **Evidencia fotográfica**: foto inicial/final de cada orden con la cámara (FileProvider), guardada en Room y mostrada con borde redondeado.
-- **Recursos nativos**: GPS, cámara, batería, linterna y vibración (con manejo de permisos en tiempo de ejecución).
-- **Animaciones**: transiciones deslizantes entre pantallas, botón de jornada con cambio de color animado, confirmación animada al marcar y temblor al guardar una actividad.
+1. Levanta los dos servicios del backend y carga las cuentas ficticias siguiendo su README.
+2. Para usar el APK firmado de demostración, abre un emulador o conecta un teléfono con depuración USB. Con un solo dispositivo conectado, ejecuta:
 
-## Arquitectura (MVVM)
-```
-app/
- ├─ data/
- │   ├─ local/        entity/ (tablas Room), dao/ (consultas), AppDatabase, DatabaseSeeder
- │   ├─ repository/   OrdenTrabajoRepository (aísla Room de la lógica)
- │   └─ session/      SessionManager (empleado logueado)
- ├─ domain/util/      LoginValidator, ActividadValidator (validaciones fuera de la UI)
- ├─ ui/
- │   ├─ theme/        Material Design 3 (colores, tipografía)
- │   ├─ navigation/   NavGraph, Screen
- │   ├─ components/   CampoTextoValidado, TarjetaOrdenTrabajo, TarjetaBateria, TarjetaLinterna
- │   └─ screens/      login, hojaruta, detalle (cada una con Screen + ViewModel + UiState)
- └─ util/             Vibracion
-```
-- **Composable**: solo dibuja y lee el estado.
-- **ViewModel**: lógica de la pantalla, expone `StateFlow`.
-- **Repository**: único punto de acceso a los datos (hoy Room).
-- **Entity / DAO**: modelo de datos y consultas.
+   ```powershell
+   adb reverse tcp:8081 tcp:8081
+   adb reverse tcp:8082 tcp:8082
+   adb install -r .\Electromechanics-demo-firmado.apk
+   ```
 
-## Cómo ejecutar
-1. Abrir la carpeta del proyecto en Android Studio y esperar el *Gradle Sync*.
-2. Ejecutar en un emulador o dispositivo Android (minSdk 23).
-3. Iniciar sesión con el técnico de prueba (datos ficticios):
-   - RUT: `12.345.678-5`
-   - Contraseña: `123456`
+   Si `adb` no está disponible en la consola, ejecútalo desde la carpeta `platform-tools` de tu SDK de Android. El APK `demo` apunta al equipo a través de esos puertos reenviados. La variante `debug` funciona con el emulador a través de `10.0.2.2` y los mismos puertos, sin `adb reverse`.
 
-> La linterna requiere un dispositivo con flash (el emulador no lo tiene).
-> Si cambias las entidades de Room, desinstala la app o borra sus datos antes de volver a ejecutar.
+3. Ingresa como supervisor con `11.111.111-1` y `DemoSupervisor26`. Elige el técnico, completa cliente, dirección, descripción y fecha `AAAA-MM-DD`. Asigna la orden y usa **Mostrar notificación** para probar el recurso nativo del supervisor.
+4. Cierra sesión e ingresa como técnico con `12.345.678-5` y `DemoTecnico26`. Abre la orden, cámbiala a **En proceso** y luego a **Completada**. La hoja de ruta tiene el botón **Actualizar** para consultar cambios.
+5. En técnico puedes registrar jornada con GPS y adjuntar evidencia con la cámara. Jornada, actividades y fotografías se guardan en el dispositivo. Para probar la linterna, usa un equipo con flash.
+
+## Sesión y datos
+
+El primer ingreso de cada cuenta valida las credenciales en Spring Boot. Room guarda la sesión activa y un verificador de contraseña por cuenta autorizada. Cerrar sesión limpia la sesión activa. Si el servidor no responde, ambos roles pueden volver a entrar con sus credenciales locales mientras el JWT siga vigente. Una respuesta de credenciales inválidas del servidor se respeta. Las órdenes ya consultadas se pueden leer desde Room durante una desconexión. Asignar órdenes o actualizar su estado requiere comunicación con el backend.
+
+Los diagramas de MVVM y microservicios están en [documents](documents/diagramas.md). Para una futura compilación `release` con servicios HTTPS, se pueden configurar `-PauthBaseUrl=https://.../` y `-PoperationsBaseUrl=https://.../`. La variante `demo` conserva las direcciones locales. La clave de firma se administra fuera del repositorio.

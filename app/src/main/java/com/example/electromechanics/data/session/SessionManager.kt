@@ -23,4 +23,6 @@ object SessionManager {
         rolActual = null
         tokenActual = null
     }
+
+    fun autorizacion(): String = "Bearer ${checkNotNull(tokenActual) { "Se requiere iniciar sesión" }}"
 }

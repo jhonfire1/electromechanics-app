@@ -5,6 +5,9 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val authBaseUrl = providers.gradleProperty("authBaseUrl")
+val operationsBaseUrl = providers.gradleProperty("operationsBaseUrl")
+
 android {
     namespace = "com.example.electromechanics"
     compileSdk = 35
@@ -18,11 +21,17 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // URL pública de auth-service (Render). Debe terminar en "/" para Retrofit.
-        buildConfigField("String", "AUTH_BASE_URL", "\"https://electromechanics-auth.onrender.com/\"")
+        buildConfigField("String", "AUTH_BASE_URL",
+            "\"${authBaseUrl.getOrElse("https://electromechanics-auth.onrender.com/")}\"")
+        buildConfigField("String", "OPERATIONS_BASE_URL",
+            "\"${operationsBaseUrl.getOrElse("http://10.0.2.2:8082/")}\"")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "AUTH_BASE_URL",
+                "\"${authBaseUrl.getOrElse("http://10.0.2.2:8081/")}\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -30,6 +39,17 @@ android {
                 "proguard-rules.pro"
             )
         }
+        create("demo") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            applicationIdSuffix = ".demo"
+            buildConfigField("String", "AUTH_BASE_URL", "\"http://127.0.0.1:8081/\"")
+            buildConfigField("String", "OPERATIONS_BASE_URL", "\"http://127.0.0.1:8082/\"")
+        }
+    }
+    sourceSets.getByName("demo") {
+        manifest.srcFile("src/debug/AndroidManifest.xml")
+        res.srcDir("src/debug/res")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

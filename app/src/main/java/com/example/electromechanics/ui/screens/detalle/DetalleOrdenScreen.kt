@@ -143,6 +143,8 @@ fun DetalleOrdenScreen(
                     item {
                         SeccionCambioEstado(
                             estadoActual = orden.estado,
+                            cambiandoEstado = uiState.cambiandoEstado,
+                            error = uiState.errorEstado,
                             onEstadoSeleccionado = { nuevoEstado ->
                                 viewModel.cambiarEstadoOrden(nuevoEstado)
                             }
@@ -232,6 +234,8 @@ private fun SeccionInformacionOrden(orden: OrdenTrabajoEntity) {
 @Composable
 private fun SeccionCambioEstado(
     estadoActual: String,
+    cambiandoEstado: Boolean,
+    error: String?,
     onEstadoSeleccionado: (String) -> Unit
 ) {
     Card(
@@ -245,28 +249,18 @@ private fun SeccionCambioEstado(
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf("PENDIENTE", "EN_PROCESO", "COMPLETADA").forEach { estado ->
-                    if (estado == estadoActual) {
-                        Button(
-                            onClick = { },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(text = estado.replace("_", " "), style = MaterialTheme.typography.labelSmall)
-                        }
-                    } else {
-                        OutlinedButton(
-                            onClick = { onEstadoSeleccionado(estado) },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(text = estado.replace("_", " "), style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
+            val siguiente = when (estadoActual) {
+                "PENDIENTE" -> "EN_PROCESO"
+                "EN_PROCESO" -> "COMPLETADA"
+                else -> null
+            }
+            if (siguiente != null) {
+                val texto = if (siguiente == "EN_PROCESO") "Iniciar orden" else "Completar orden"
+                OutlinedButton(onClick = { onEstadoSeleccionado(siguiente) }, enabled = !cambiandoEstado) {
+                    Text(if (cambiandoEstado) "Actualizando…" else texto)
                 }
             }
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
     }
 }

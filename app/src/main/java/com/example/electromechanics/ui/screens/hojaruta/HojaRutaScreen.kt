@@ -50,6 +50,9 @@ fun HojaRutaScreen(
             TopAppBar(
                 title = { Text("Hoja de Ruta") },
                 actions = {
+                    TextButton(onClick = viewModel::cargarOrdenes, enabled = !uiState.isLoading) {
+                        Text("Actualizar")
+                    }
                     TextButton(onClick = onCerrarSesion) { Text("Cerrar sesión") }
                 }
             )
@@ -97,7 +100,10 @@ fun HojaRutaScreen(
                 }
             }
 
-            // Estado de carga o contenido
+            uiState.errorMessage?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp))
+            }
+
             when {
                 uiState.isLoading -> {
                     Box(
@@ -105,18 +111,6 @@ fun HojaRutaScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator()
-                    }
-                }
-
-                uiState.errorMessage != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = uiState.errorMessage ?: "Error desconocido",
-                            color = MaterialTheme.colorScheme.error
-                        )
                     }
                 }
 

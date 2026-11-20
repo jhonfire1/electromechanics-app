@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.electromechanics.data.local.entity.ActividadEntity
 import com.example.electromechanics.data.repository.OrdenTrabajoRepository
+import com.example.electromechanics.data.remote.mensajeSolicitud
 import com.example.electromechanics.domain.util.ActividadValidator
 import com.example.electromechanics.domain.util.ValidationResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 class DetalleOrdenViewModel(
@@ -54,8 +56,18 @@ class DetalleOrdenViewModel(
     }
 
     fun cambiarEstadoOrden(nuevoEstado: String) {
+        if (_uiState.value.cambiandoEstado) return
+        _uiState.update { it.copy(cambiandoEstado = true, errorEstado = null) }
         viewModelScope.launch {
-            repository.actualizarEstado(idOrden, nuevoEstado)
+            try {
+                repository.actualizarEstado(idOrden, nuevoEstado)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorEstado = mensajeSolicitud(e, "No se pudo cambiar el estado.")) }
+            } finally {
+                _uiState.update { it.copy(cambiandoEstado = false) }
+            }
         }
     }
 

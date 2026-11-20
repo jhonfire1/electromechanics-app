@@ -8,6 +8,8 @@ data class DetalleOrdenUiState(
     val actividades: List<ActividadEntity> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val errorEstado: String? = null,
+    val cambiandoEstado: Boolean = false,
 
     // Campos del formulario para registrar nueva actividad
     val nuevaTarea: String = "",

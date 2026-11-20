@@ -14,6 +14,7 @@ import com.example.electromechanics.data.local.dao.ServicioDao
 import com.example.electromechanics.data.local.dao.SesionDao
 import com.example.electromechanics.data.local.dao.SucursalDao
 import com.example.electromechanics.data.local.entity.ActividadEntity
+import com.example.electromechanics.data.local.entity.CuentaLocalEntity
 import com.example.electromechanics.data.local.entity.EmpleadoEntity
 import com.example.electromechanics.data.local.entity.EvidenciaEntity
 import com.example.electromechanics.data.local.entity.RegistroJornadaEntity
@@ -32,9 +33,10 @@ import com.example.electromechanics.data.local.dao.OrdenTrabajoDao
         RegistroJornadaEntity::class,
         EvidenciaEntity::class ,
         OrdenTrabajoEntity::class,
-        SesionEntity::class
+        SesionEntity::class,
+        CuentaLocalEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -73,6 +75,29 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS cuentas_locales (
+                        username TEXT NOT NULL PRIMARY KEY,
+                        idUsuario TEXT NOT NULL,
+                        rol TEXT NOT NULL,
+                        token TEXT NOT NULL,
+                        expiraEnMs INTEGER NOT NULL,
+                        verificadorLocal TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO cuentas_locales (username, idUsuario, rol, token, expiraEnMs, verificadorLocal)
+                    SELECT username, idUsuario, rol, token, expiraEnMs, verificadorLocal FROM sesion
+                    """.trimIndent()
+                )
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -80,7 +105,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "electromechanics_db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance
