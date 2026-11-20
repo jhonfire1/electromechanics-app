@@ -7,6 +7,7 @@ plugins {
 
 val authBaseUrl = providers.gradleProperty("authBaseUrl")
 val operationsBaseUrl = providers.gradleProperty("operationsBaseUrl")
+val demoLocal = providers.gradleProperty("demoLocal").map(String::toBoolean).orElse(false)
 
 android {
     namespace = "com.example.electromechanics"
@@ -20,6 +21,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("boolean", "DEMO_LOCAL", "false")
 
         buildConfigField("String", "AUTH_BASE_URL",
             "\"${authBaseUrl.getOrElse("https://electromechanics-auth.onrender.com/")}\"")
@@ -29,6 +31,7 @@ android {
 
     buildTypes {
         debug {
+            buildConfigField("boolean", "DEMO_LOCAL", demoLocal.get().toString())
             buildConfigField("String", "AUTH_BASE_URL",
                 "\"${authBaseUrl.getOrElse("http://10.0.2.2:8081/")}\"")
         }

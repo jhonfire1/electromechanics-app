@@ -29,6 +29,9 @@ interface SesionDao {
     @Query("SELECT * FROM cuentas_locales WHERE username = :username")
     suspend fun obtenerCuenta(username: String): CuentaLocalEntity?
 
+    @Query("SELECT * FROM cuentas_locales WHERE rol = :rol")
+    suspend fun obtenerCuentasPorRol(rol: String): List<CuentaLocalEntity>
+
     @Query("DELETE FROM cuentas_locales WHERE username = :username")
     suspend fun borrarCuenta(username: String)
 

@@ -5,8 +5,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -21,9 +25,11 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.electromechanics.BuildConfig
 import com.example.electromechanics.data.local.AppDatabase
 import com.example.electromechanics.data.remote.RetrofitClient
 import com.example.electromechanics.data.repository.AuthRepository
+import com.example.electromechanics.data.repository.DemoLocal
 import com.example.electromechanics.data.repository.EvidenciaRepository
 import com.example.electromechanics.data.repository.JornadaRepository
 import com.example.electromechanics.data.repository.OrdenTrabajoRepository
@@ -48,6 +54,7 @@ import kotlinx.coroutines.withContext
 private fun rutaInicialPorRol(rol: String?): String = when (rol) {
     Roles.TECNICO -> Screen.HojaRuta.route
     Roles.SUPERVISOR -> Screen.SupervisorHome.route
+    Roles.CLIENTE -> Screen.ClienteHome.route
     else -> Screen.Login.route
 }
 
@@ -57,8 +64,13 @@ fun NavGraph(
     database: AppDatabase
 ) {
     // Una sola instancia compartida por Splash, Login y el cierre de sesión.
-    val authRepository = remember { AuthRepository(database.sesionDao(), RetrofitClient.authApi) }
-    val ordenesRepository = remember { OrdenTrabajoRepository(database, RetrofitClient.ordenesApi) }
+    val demoLocal = remember(database) { if (BuildConfig.DEMO_LOCAL) DemoLocal(database) else null }
+    val authRepository = remember(database, demoLocal) {
+        AuthRepository(database.sesionDao(), if (demoLocal == null) RetrofitClient.authApi else null, demoLocal)
+    }
+    val ordenesRepository = remember(database, demoLocal) {
+        OrdenTrabajoRepository(database, if (demoLocal == null) RetrofitClient.ordenesApi else null, demoLocal)
+    }
     val scope = rememberCoroutineScope()
 
     val cerrarSesion: () -> Unit = {
@@ -117,6 +129,17 @@ fun NavGraph(
                     }
                 }
             )
+        }
+
+        composable(Screen.ClienteHome.route) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Cuenta de cliente")
+                Button(onClick = cerrarSesion) { Text("Cerrar sesión") }
+            }
         }
 
         composable(Screen.SupervisorHome.route) {

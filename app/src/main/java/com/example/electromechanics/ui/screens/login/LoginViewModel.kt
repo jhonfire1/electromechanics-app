@@ -3,14 +3,19 @@ package com.example.electromechanics.ui.screens.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.electromechanics.data.repository.AuthRepository
+import com.example.electromechanics.data.repository.CuentaLocalRegistrada
 import com.example.electromechanics.data.repository.LoginResult
 import com.example.electromechanics.domain.util.LoginValidator
 import com.example.electromechanics.domain.util.ValidationResult
+import com.google.gson.JsonParseException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import retrofit2.HttpException
+import java.io.IOException
 
 class LoginViewModel(
     private val authRepository: AuthRepository
@@ -25,6 +30,58 @@ class LoginViewModel(
 
     fun onPasswordChanged(newPassword: String) {
         _uiState.update { it.copy(passwordInput = newPassword, passwordError = null, errorMessage = null) }
+    }
+
+    fun limpiarFormulario() {
+        _uiState.update { LoginUiState() }
+    }
+
+    fun registrarCliente() {
+        val estado = _uiState.value
+        if (estado.isLoading) return
+        val rutError = (LoginValidator.validarRut(estado.rutInput) as? ValidationResult.Error)?.message
+        val passwordError = if (estado.passwordInput.length < 8) {
+            "Usa al menos 8 caracteres."
+        } else {
+            (LoginValidator.validarPassword(estado.passwordInput) as? ValidationResult.Error)?.message
+        }
+        if (rutError != null || passwordError != null) {
+            _uiState.update { it.copy(rutError = rutError, passwordError = passwordError) }
+            return
+        }
+
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        viewModelScope.launch {
+            try {
+                val rut = LoginValidator.normalizarRut(estado.rutInput)
+                val resultado = authRepository.registrarCliente(rut, estado.passwordInput)
+                if (resultado is LoginResult.Exito) {
+                    _uiState.update { it.copy(rolAutenticado = resultado.rol, passwordInput = "") }
+                } else {
+                    mostrarErrorRegistro("La cuenta se creó. Intenta iniciar sesión.")
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: CuentaLocalRegistrada) {
+                mostrarErrorRegistro("Este RUT ya tiene una cuenta. Intenta iniciar sesión.")
+            } catch (e: HttpException) {
+                mostrarErrorRegistro(when (e.code()) {
+                    400 -> "Revisa el RUT y la contraseña."
+                    409 -> "Este RUT ya tiene una cuenta. Intenta iniciar sesión."
+                    else -> "El servidor no pudo registrar la cuenta."
+                })
+            } catch (e: IOException) {
+                mostrarErrorRegistro("Revisa la conexión e intenta nuevamente.")
+            } catch (e: JsonParseException) {
+                mostrarErrorRegistro("El servidor no respondió correctamente. Intenta iniciar sesión.")
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    private fun mostrarErrorRegistro(mensaje: String) {
+        _uiState.update { it.copy(errorMessage = mensaje) }
     }
 
     fun login() {

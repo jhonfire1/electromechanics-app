@@ -38,6 +38,9 @@ class SesionLocalTest {
             }
 
             override suspend fun tecnicos(token: String): List<TecnicoDto> = emptyList()
+
+            override suspend fun registrarCliente(request: LoginRequestDto): LoginResponseDto =
+                error("Esta prueba solo usa el inicio de sesión.")
         }
         val auth = AuthRepository(database.sesionDao(), api) { ahora }
 

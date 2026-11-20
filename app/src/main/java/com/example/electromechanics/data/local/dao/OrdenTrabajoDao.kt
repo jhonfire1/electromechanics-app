@@ -16,6 +16,15 @@ interface OrdenTrabajoDao {
     @Query("SELECT * FROM ordenes_trabajo WHERE idOrden = :idOrden LIMIT 1")
     fun obtenerOrdenPorId(idOrden: String): Flow<OrdenTrabajoEntity?>
 
+    @Query("SELECT * FROM ordenes_trabajo WHERE idOrden = :idOrden LIMIT 1")
+    suspend fun buscarOrdenPorId(idOrden: String): OrdenTrabajoEntity?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertarSiNoExisten(ordenes: List<OrdenTrabajoEntity>)
+
+    @Query("UPDATE ordenes_trabajo SET estado = :estado WHERE idOrden = :idOrden")
+    suspend fun cambiarEstado(idOrden: String, estado: String)
+
     @Query("DELETE FROM ordenes_trabajo WHERE idEmpleadoAsignado = :idEmpleado")
     suspend fun eliminarOrdenesDelTecnico(idEmpleado: String)
 

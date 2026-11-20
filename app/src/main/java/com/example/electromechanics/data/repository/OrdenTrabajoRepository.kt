@@ -15,17 +15,20 @@ import kotlinx.coroutines.sync.withLock
 
 class OrdenTrabajoRepository(
     private val database: AppDatabase,
-    private val api: OrdenesApi
+    private val api: OrdenesApi?,
+    private val demoLocal: DemoLocal? = null
 ) {
     private val ordenTrabajoDao = database.ordenTrabajoDao()
     private val actividadDao = database.actividadDao()
     private val sincronizacion = Mutex()
 
     suspend fun crear(orden: CrearOrdenDto): OrdenDto =
-        api.crear(SessionManager.autorizacion(), orden)
+        demoLocal?.crearOrden(orden) ?: checkNotNull(api).crear(SessionManager.autorizacion(), orden)
 
     suspend fun actualizarAsignadas(idEmpleado: String) = sincronizacion.withLock {
-        val ordenes = api.asignadas(SessionManager.autorizacion()).map { it.aEntidad() }
+        // En la demo, la hoja de ruta ya observa las órdenes guardadas en Room.
+        if (demoLocal != null) return@withLock
+        val ordenes = checkNotNull(api).asignadas(SessionManager.autorizacion()).map { it.aEntidad() }
         check(ordenes.all { it.idEmpleadoAsignado == idEmpleado })
         database.withTransaction {
             ordenTrabajoDao.eliminarOrdenesDelTecnico(idEmpleado)
@@ -42,7 +45,13 @@ class OrdenTrabajoRepository(
     }
 
     suspend fun actualizarEstado(idOrden: String, nuevoEstado: String) = sincronizacion.withLock {
-        val orden = api.cambiarEstado(SessionManager.autorizacion(), idOrden, CambioEstadoDto(nuevoEstado))
+        if (demoLocal != null) {
+            demoLocal.cambiarEstado(idOrden, nuevoEstado)
+            return@withLock
+        }
+        val orden = checkNotNull(api).cambiarEstado(
+            SessionManager.autorizacion(), idOrden, CambioEstadoDto(nuevoEstado)
+        )
         ordenTrabajoDao.insertAll(listOf(orden.aEntidad()))
     }
 

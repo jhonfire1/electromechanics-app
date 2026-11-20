@@ -19,7 +19,8 @@ import java.io.IOException
 object Roles {
     const val TECNICO = "TECNICO"
     const val SUPERVISOR = "SUPERVISOR"
-    val PERMITIDOS = setOf(TECNICO, SUPERVISOR)
+    const val CLIENTE = "CLIENTE"
+    val PERMITIDOS = setOf(TECNICO, SUPERVISOR, CLIENTE)
 }
 
 sealed interface LoginResult {
@@ -35,15 +36,21 @@ sealed interface LoginResult {
 
 class AuthRepository(
     private val sesionDao: SesionDao,
-    private val authApi: AuthApi,
+    private val authApi: AuthApi?,
+    private val demoLocal: DemoLocal? = null,
     // Reloj inyectable: permite probar la expiración de 8 h sin esperar (P1-07).
     private val ahoraMs: () -> Long = { System.currentTimeMillis() }
 ) {
 
     /** Intenta login online; solo si no hay red cae al login local. */
     suspend fun login(rutNormalizado: String, password: String): LoginResult {
+        if (demoLocal != null) {
+            val sesion = demoLocal.autenticar(rutNormalizado, password)
+                ?: return LoginResult.CredencialesInvalidas
+            return activarSesionLocal(sesion)
+        }
         return try {
-            val respuesta = authApi.login(LoginRequestDto(rutNormalizado, password))
+            val respuesta = checkNotNull(authApi).login(LoginRequestDto(rutNormalizado, password))
             procesarLoginOnline(rutNormalizado, password, respuesta)
         } catch (e: CancellationException) {
             throw e // nunca tragarse la cancelación de una corrutina
@@ -65,12 +72,19 @@ class AuthRepository(
 
     /** Recupera la sesión al abrir la app. Devuelve null si no existe o ya expiró. */
     suspend fun restaurarSesion(): SesionEntity? {
-        sesionDao.borrarCuentasVencidas(ahoraMs())
-        val sesion = sesionDao.obtener() ?: return null
-        if (ahoraMs() >= sesion.expiraEnMs) {
+        if (demoLocal != null) demoLocal.preparar() else sesionDao.borrarCuentasVencidas(ahoraMs())
+        val guardada = sesionDao.obtener() ?: return null
+        val sesion = when {
+            ahoraMs() >= guardada.expiraEnMs -> null
+            demoLocal != null -> demoLocal.recuperarSesion(guardada)
+            guardada.token == DemoLocal.TOKEN -> null
+            else -> guardada
+        }
+        if (sesion == null) {
             cerrarSesion()
             return null
         }
+        if (sesion != guardada) sesionDao.guardar(sesion)
         SessionManager.iniciarSesion(sesion.idUsuario, sesion.rol, sesion.token)
         return sesion
     }
@@ -80,7 +94,21 @@ class AuthRepository(
         SessionManager.cerrarSesion()
     }
 
-    suspend fun listarTecnicos() = authApi.tecnicos(SessionManager.autorizacion())
+    suspend fun listarTecnicos() =
+        demoLocal?.listarTecnicos() ?: checkNotNull(authApi).tecnicos(SessionManager.autorizacion())
+
+    suspend fun registrarCliente(rut: String, password: String): LoginResult {
+        if (demoLocal != null) return activarSesionLocal(demoLocal.registrarCliente(rut, password))
+        val respuesta = checkNotNull(authApi).registrarCliente(LoginRequestDto(rut, password))
+        if (respuesta.role != Roles.CLIENTE) return LoginResult.ErrorServidor(null)
+        return procesarLoginOnline(rut, password, respuesta)
+    }
+
+    private suspend fun activarSesionLocal(sesion: SesionEntity): LoginResult {
+        sesionDao.guardar(sesion)
+        SessionManager.iniciarSesion(sesion.idUsuario, sesion.rol, sesion.token)
+        return LoginResult.Exito(sesion.rol, sinConexion = true)
+    }
 
     private suspend fun procesarLoginOnline(
         rutNormalizado: String,
